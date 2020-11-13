@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  reverse-proxy:
+    image: traefik:v2.3
+    command: --api.insecure=true --providers.docker
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ~/traefik-labs/traefik/traefik.toml:/traefik.toml
+
+  webserv:
+    build:
+      context: ./webserv
+      dockerfile: Dockerfile
+    image: webserv
+    deploy:
+      replicas: 2
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.webserv.rule=Host(`lab.traefik.id`) && PathPrefix(`/`)"
+
+  go:
+    build:
+      context: ./go
+      dockerfile: Dockerfile
+    image: hello
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.go.rule=Host(`lab.traefik.id`) && PathPrefix(`/go`)"
